@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
+import { verifyTokenJose } from "@/lib/auth";
+import { APP_CONFIG } from "@/lib/config";
 
-export function middleware(req: NextRequest) {
-    const token = req.cookies.get("token")?.value;
+export async function middleware(req: NextRequest) {
+    const token = req.cookies.get(APP_CONFIG.cookie.name)?.value;
 
     if (!token) {
-        return NextResponse.redirect(new URL("/login", req.url));
+        return NextResponse.redirect(new URL("/signin", req.url));
     }
 
     try {
-        jwt.verify(token, process.env.JWT_SECRET!);
-        return NextResponse.next();
+        const decoded = await verifyTokenJose(token);
+        const res = NextResponse.next();
+        res.headers.set("x-user-id", decoded.id.toString());
+        return res;
     } catch (err) {
-        return NextResponse.redirect(new URL("/login", req.url));
+        return NextResponse.redirect(new URL("/signin", req.url));
     }
 }
 
-// Какие страницы защищаем
 export const config = {
-    matcher: ["/api/me"] // "/profile/:path*"
+    matcher: ["/api/me", "/dashboard/:path*"]
 };

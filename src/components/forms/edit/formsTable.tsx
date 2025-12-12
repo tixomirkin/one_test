@@ -12,6 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { useRouter } from 'next/navigation'
+import {Check} from "lucide-react";
 
 
 export default function FormsTable({forms} : {forms: UsersFormsType}) {
@@ -19,7 +20,7 @@ export default function FormsTable({forms} : {forms: UsersFormsType}) {
 
     return (
         <Table>
-            <TableCaption>A list of your recent invoices.</TableCaption>
+            {/*<TableCaption>A list of your recent invoices.</TableCaption>*/}
             <TableHeader>
                 <TableRow>
                     <TableHead className="w-[50px]">ID</TableHead>
@@ -33,10 +34,10 @@ export default function FormsTable({forms} : {forms: UsersFormsType}) {
             <TableBody>
                 {forms.map((form) => (
 
-                    <TableRow className='cursor-pointer' key={form.id} onClick={() => router.push(`home/${form.id}`)}>
+                    <TableRow className='cursor-pointer' key={form.id} onClick={() => router.push(`dashboard/${form.id}`)}>
                         <TableCell className="font-medium">{form.id}</TableCell>
                         <TableCell className="font-bold">{form.title}</TableCell>
-                        <TableCell>{form.isPublic}</TableCell>
+                        <TableCell>{form.isPublic && <Check />}</TableCell>
                         <TableCell>{form.questionCount}</TableCell>
                         <TableCell>{form.attemptsCount}</TableCell>
                         <TableCell className="text-right">{form.createdAt.toDateString()}</TableCell>

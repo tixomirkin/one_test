@@ -21,6 +21,7 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {Field, FieldLabel} from "@/components/ui/field";
 import {Textarea} from "@/components/ui/textarea";
 import {fullFormType} from "@/db/forms/get-full-form";
+import editForm from "@/db/forms/edit-form";
 
 export const editFormSchema = z.object({
     title: z.string().min(3),
@@ -33,9 +34,9 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
     const form = useForm<z.infer<typeof editFormSchema>>({
         resolver: zodResolver(editFormSchema),
         defaultValues: {
-            title: "",
-            description: "",
-            isTest: false
+            title: oldForm.title,
+            description: oldForm.description,
+            isTest: oldForm.isTest,
         },
     })
 
@@ -46,7 +47,7 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
         setIsLoading(true)
 
         try {
-            // const result = await createForm(values)
+            const result = await editForm(values, oldForm.id)
             setOpen(false)
 
         } catch (error) {
@@ -72,7 +73,7 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form className='flex flex-col gap-4' id='edit-password' onSubmit={form.handleSubmit(onSubmit)}>
+                    <form className='flex flex-col gap-4' id='edit-form' onSubmit={form.handleSubmit(onSubmit)}>
                         <FormField
                             control={form.control}
                             name="title"
@@ -128,6 +129,7 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
                                 </FormItem>
                             )}
                         />
+
                     </form>
                 </Form>
 
@@ -135,9 +137,9 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
                     <DialogClose asChild>
                         <Button  variant="outline">Отмена</Button>
                     </DialogClose>
-                    <Button disabled={isLoading} form='edit-password' type="submit">
+                    <Button disabled={isLoading} form='edit-form' type="submit">
                         { isLoading && <Spinner /> }
-                        Создать
+                        Сохранить
                     </Button>
                 </DialogFooter>
 

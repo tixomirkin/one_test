@@ -1,5 +1,3 @@
-'use server'
-
 import {SidebarInset, SidebarTrigger} from "@/components/ui/sidebar";
 import {Separator} from "@/components/ui/separator";
 import {
@@ -13,14 +11,31 @@ import {
 import Link from "next/link";
 import getFullForm from "@/db/forms/get-full-form";
 import FormsSection from "@/components/forms/edit/form-section";
+import {canEditForm} from "@/lib/form-access";
+import {notFound} from "next/navigation";
+
+
 
 export default async function EditFormPage({params}: { params: Promise<{ formId: string }> }) {
 
     const {formId} = await params;
+    const formIdNum = parseInt(formId);
+    
+    if (isNaN(formIdNum)) {
+        notFound();
+    }
+
+    // Проверяем доступ на редактирование
+    const hasAccess = await canEditForm(formIdNum);
+    if (!hasAccess) {
+        notFound();
+    }
+
     const form = await getFullForm(formId)
     if (!form) {
-        return null
+        notFound();
     }
+
 
     return (
         <SidebarInset >
@@ -32,7 +47,7 @@ export default async function EditFormPage({params}: { params: Promise<{ formId:
                         <BreadcrumbList>
                             <BreadcrumbItem className="hidden md:block">
                                 <BreadcrumbLink asChild>
-                                    <Link href='/home'>Мои формы</Link>
+                                    <Link href='/dashboard'>Мои формы</Link>
                                 </BreadcrumbLink>
                             </BreadcrumbItem>
                             <BreadcrumbSeparator className="hidden md:block" />

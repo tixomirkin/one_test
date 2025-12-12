@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: dev server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://.+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Next.js: debug server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev -- --inspect",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Next.js: start production",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm start",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Next.js: build",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run build",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Drizzle Studio",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run studio",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Drizzle Push",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run push",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Lint",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run lint",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
