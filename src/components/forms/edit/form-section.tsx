@@ -27,7 +27,7 @@ export default async function FormsSection({form} : {form: fullFormType}) {
             </div>
 
             {form.question.map((q) => (
-                <QuestionSection key={q.id} lastPosition={form.question.length-1} q={q}/>
+                <QuestionSection key={q.id} lastPosition={form.question.length-1} q={q} isTest={form.isTest}/>
             ))}
             <AddQuestionBtn formId={form.id}/>
         </div>

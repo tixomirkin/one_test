@@ -12,6 +12,7 @@ export const testsTable = mysqlTable('tests', {
     isTest: boolean('is_test').default(false).notNull(),
     isPublic: boolean('is_public').default(false).notNull(),
     slug: varchar({ length: 255 }).notNull().unique(),
+    successMessage: varchar({ length: 1000 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

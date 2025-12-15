@@ -1,8 +1,23 @@
 import { GalleryVerticalEnd } from "lucide-react"
-
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
+import { verifyTokenJose } from "@/lib/auth"
+import { APP_CONFIG } from "@/lib/config"
 import { LoginForm } from "@/components/login-form"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+    const cookieStore = await cookies()
+    const token = cookieStore.get(APP_CONFIG.cookie.name)?.value
+
+    if (token) {
+        try {
+            await verifyTokenJose(token)
+            redirect("/dashboard")
+        } catch (err) {
+            // Token invalid, continue to login page
+        }
+    }
+
     return (
         <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div className="flex w-full max-w-sm flex-col gap-6">

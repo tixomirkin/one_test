@@ -12,7 +12,7 @@ import {Textarea} from "@/components/ui/textarea";
 import {Spinner} from "@/components/ui/spinner";
 import {Button} from "@/components/ui/button";
 import {Checkbox} from "@/components/ui/checkbox";
-import sendAttempts from "@/db/attempts/send-attempts";
+import sendAttempts, { TestResult } from "@/db/attempts/send-attempts";
 
 // Создаем динамическую схему валидации на основе вопросов формы
 function createFormAnswerSchema(questions: fullFormType['question']) {
@@ -82,14 +82,27 @@ export function PublicForm({fullForm}: {fullForm: fullFormType}) {
     })
 
     const [isLoading, setIsLoading] = useState(false)
+    const [isSubmitted, setIsSubmitted] = useState(false)
+    const [testResult, setTestResult] = useState<TestResult | null>(null)
 
     async function onSubmit(values: FormAnswer) {
         setIsLoading(true);
 
         try {
             const result = await sendAttempts(values, fullForm.id);
-            if (result) {
-                toast.success("Ответы успешно отправлены");
+            if (result === false) {
+                toast.error("Не удалось отправить ответы");
+                return;
+            }
+            if (result === true) {
+                setIsSubmitted(true);
+                form.reset();
+                return;
+            }
+            // Это результат теста
+            if (result && typeof result === 'object' && 'totalQuestions' in result) {
+                setTestResult(result);
+                setIsSubmitted(true);
                 form.reset();
                 return;
             }
@@ -278,6 +291,98 @@ export function PublicForm({fullForm}: {fullForm: fullFormType}) {
                 return null;
         }
     };
+
+    if (isSubmitted) {
+        // Если это тест и есть результаты, показываем результаты
+        if (fullForm.isTest && testResult) {
+            const percentage = Math.round((testResult.correctAnswers / testResult.totalQuestions) * 100);
+            
+            return (
+                <div className="flex flex-col gap-6 p-8">
+                    <div className="text-center space-y-2">
+                        <h2 className="text-2xl font-bold">Результаты теста</h2>
+                        <div className="text-4xl font-bold text-primary">{percentage}%</div>
+                        <div className="text-lg text-muted-foreground">
+                            Правильных ответов: {testResult.correctAnswers} из {testResult.totalQuestions}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 border-t pt-4">
+                        <h3 className="text-lg font-semibold">Детализация ответов:</h3>
+                        {testResult.questions.map((q, index) => {
+                            const question = fullForm.question.find(fq => fq.id === q.questionId);
+                            if (!question) return null;
+
+                            // Форматируем ответы для отображения
+                            let userAnswerDisplay = '';
+                            let correctAnswerDisplay = '';
+
+                            if (question.questionType === 'single') {
+                                const userOption = question.options?.find(opt => opt.id === q.userAnswer);
+                                const correctOption = question.options?.find(opt => opt.id === q.correctAnswer);
+                                userAnswerDisplay = userOption?.optionText || 'Не ответил';
+                                correctAnswerDisplay = correctOption?.optionText || 'Не указан';
+                            } else if (question.questionType === 'multiple') {
+                                const userOptionIds = Array.isArray(q.userAnswer) ? q.userAnswer : [];
+                                const correctOptionIds = Array.isArray(q.correctAnswer) ? q.correctAnswer : [];
+                                const userOptions = question.options?.filter(opt => userOptionIds.includes(opt.id)) || [];
+                                const correctOptions = question.options?.filter(opt => correctOptionIds.includes(opt.id)) || [];
+                                userAnswerDisplay = userOptions.map(opt => opt.optionText).join(', ') || 'Не ответил';
+                                correctAnswerDisplay = correctOptions.map(opt => opt.optionText).join(', ') || 'Не указан';
+                            } else {
+                                userAnswerDisplay = q.userAnswer?.toString() || 'Не ответил';
+                                correctAnswerDisplay = q.correctAnswer?.toString() || 'Не указан';
+                            }
+
+                            return (
+                                <div 
+                                    key={q.questionId} 
+                                    className={`p-4 rounded-lg border-2 ${q.isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}
+                                >
+                                    <div className="font-semibold mb-2">
+                                        {index + 1}. {q.questionText}
+                                    </div>
+                                    <div className="space-y-1 text-sm">
+                                        <div>
+                                            <span className="font-medium">Ваш ответ: </span>
+                                            <span className={q.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                                                {userAnswerDisplay}
+                                            </span>
+                                        </div>
+                                        {!q.isCorrect && (
+                                            <div>
+                                                <span className="font-medium">Правильный ответ: </span>
+                                                <span className="text-green-700">{correctAnswerDisplay}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className={`mt-2 text-xs font-medium ${q.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                        {q.isCorrect ? '✓ Правильно' : '✗ Неправильно'}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {fullForm.successMessage && (
+                        <div className="text-center text-muted-foreground">
+                            {fullForm.successMessage}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Обычное сообщение для формы
+        const message = fullForm.successMessage || "Спасибо за заполнение формы!";
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+                <div className="text-lg font-medium text-foreground">
+                    {message}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <Form {...form}>

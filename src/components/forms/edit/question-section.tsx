@@ -32,10 +32,12 @@ const questionTypeLabels: Record<string, string> = {
     'date': 'Выбор даты'
 };
 
-export default function QuestionSection({q, lastPosition} : {q: QuestionType, lastPosition: number}) {
+export default function QuestionSection({q, lastPosition, isTest} : {q: QuestionType, lastPosition: number, isTest: boolean}) {
     const [title, setTitle] = useState(q.questionText);
     const [required, setRequired] = useState(Boolean(q.required));
+    const [correctAnswer, setCorrectAnswer] = useState(q.correctAnswer || '');
     const debouncedTitle = useDebounce(title, 600);
+    const debouncedCorrectAnswer = useDebounce(correctAnswer, 600);
 
     useEffect(() => {
         if (debouncedTitle !== q.questionText && q.testId) {
@@ -48,6 +50,12 @@ export default function QuestionSection({q, lastPosition} : {q: QuestionType, la
             updateQuestion(q.testId, q.id, {required}).catch(e => toast.error(e.message));
         }
     }, [required]);
+
+    useEffect(() => {
+        if (isTest && debouncedCorrectAnswer !== (q.correctAnswer || '') && q.testId) {
+            updateQuestion(q.testId, q.id, {correctAnswer: debouncedCorrectAnswer || null}).catch(e => toast.error(e.message));
+        }
+    }, [debouncedCorrectAnswer, isTest]);
 
     const handleTypeChange = (newType: string) => {
         updateQuestion(q.testId, q.id, {questionType: newType as any}).catch(e => toast.error(e.message));
@@ -64,6 +72,14 @@ export default function QuestionSection({q, lastPosition} : {q: QuestionType, la
     const handleOptionTextChange = async (optionId: number, newText: string) => {
         try {
             await updateOption(optionId, {optionText: newText});
+        } catch (e: any) {
+            toast.error(e.message);
+        }
+    };
+
+    const handleOptionCorrectChange = async (optionId: number, isCorrect: boolean) => {
+        try {
+            await updateOption(optionId, {isCorrect});
         } catch (e: any) {
             toast.error(e.message);
         }
@@ -154,6 +170,12 @@ export default function QuestionSection({q, lastPosition} : {q: QuestionType, la
                     <div className="space-y-2">
                         {sortedOptions.map((option) => (
                             <div key={option.id} className="flex items-center gap-2">
+                                {isTest && (
+                                    <Checkbox
+                                        checked={Boolean(option.isCorrect)}
+                                        onCheckedChange={(checked) => handleOptionCorrectChange(option.id, checked === true)}
+                                    />
+                                )}
                                 <Input
                                     value={option.optionText}
                                     onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
@@ -175,6 +197,18 @@ export default function QuestionSection({q, lastPosition} : {q: QuestionType, la
                             </p>
                         )}
                     </div>
+                </div>
+            )}
+
+            {isTest && !needsOptions && (
+                <div className="space-y-2 border-t pt-4">
+                    <Label htmlFor={`correct-answer-${q.id}`}>Правильный ответ:</Label>
+                    <Input
+                        id={`correct-answer-${q.id}`}
+                        value={correctAnswer}
+                        onChange={(e) => setCorrectAnswer(e.target.value)}
+                        placeholder="Введите правильный ответ"
+                    />
                 </div>
             )}
 

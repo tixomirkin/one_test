@@ -20,6 +20,7 @@ export default async function editForm(values: z.infer<typeof editFormSchema>, f
         title: values.title,
         description: values.description,
         isTest: values.isTest,
+        successMessage: values.successMessage || null,
     }).where(eq(testsTable.id, formId))
 
     revalidatePath(`/dashboard/${formId}`)

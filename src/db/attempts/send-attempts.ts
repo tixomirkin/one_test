@@ -6,8 +6,22 @@ import { answersTable, attemptsTable, questionTable, testsTable } from "@/db/sch
 import { eq } from "drizzle-orm";
 import { canTakeForm, isFormPublic } from "@/lib/form-access";
 import { getUser } from "@/lib/get-user";
+import getFullForm from "@/db/forms/get-full-form";
 
-export default async function sendAttempts(value: FormAnswer, formId: number) {
+export type TestResult = {
+    totalQuestions: number;
+    correctAnswers: number;
+    incorrectAnswers: number;
+    questions: Array<{
+        questionId: number;
+        questionText: string;
+        isCorrect: boolean;
+        userAnswer: string | number | number[] | null;
+        correctAnswer: string | number | number[] | null;
+    }>;
+};
+
+export default async function sendAttempts(value: FormAnswer, formId: number): Promise<true | TestResult | false> {
     try {
         const forms = await db
             .select()
@@ -41,6 +55,78 @@ export default async function sendAttempts(value: FormAnswer, formId: number) {
             userId = user.id;
         } catch (error) {
             // Пользователь не авторизован - userId останется undefined
+        }
+
+        const form = forms[0];
+        const isTest = form.isTest;
+
+        // Получаем полную информацию о форме для проверки ответов (если это тест)
+        let testResult: TestResult | null = null;
+        if (isTest) {
+            const fullForm = await getFullForm(formId);
+            if (!fullForm) {
+                return false;
+            }
+
+            testResult = {
+                totalQuestions: fullForm.question.length,
+                correctAnswers: 0,
+                incorrectAnswers: 0,
+                questions: [],
+            };
+
+            // Проверяем каждый ответ
+            for (const question of fullForm.question) {
+                const userAnswer = value.questions.find(q => q.id === question.id);
+                let isCorrect = false;
+                let userAnswerValue: string | number | number[] | null = null;
+                let correctAnswerValue: string | number | number[] | null = null;
+
+                if (question.questionType === 'single' || question.questionType === 'multiple') {
+                    // Для вопросов с вариантами ответов
+                    const correctOptionIds = (question.options || [])
+                        .filter(opt => opt.isCorrect)
+                        .map(opt => opt.id)
+                        .sort((a, b) => a - b);
+
+                    if (question.questionType === 'single') {
+                        const userOptionId = typeof userAnswer?.answer === 'number' ? userAnswer.answer : null;
+                        userAnswerValue = userOptionId;
+                        correctAnswerValue = correctOptionIds[0] || null;
+                        isCorrect = userOptionId !== null && correctOptionIds.includes(userOptionId);
+                    } else {
+                        // multiple
+                        const userOptionIds = Array.isArray(userAnswer?.answer) 
+                            ? (userAnswer.answer as number[]).sort((a, b) => a - b)
+                            : [];
+                        userAnswerValue = userOptionIds;
+                        correctAnswerValue = correctOptionIds;
+                        isCorrect = userOptionIds.length === correctOptionIds.length &&
+                            userOptionIds.every((id, index) => id === correctOptionIds[index]);
+                    }
+                } else {
+                    // Для текстовых вопросов
+                    const userText = typeof userAnswer?.answer === 'string' ? userAnswer.answer.trim() : '';
+                    const correctText = question.correctAnswer?.trim() || '';
+                    userAnswerValue = userText;
+                    correctAnswerValue = correctText;
+                    isCorrect = userText.toLowerCase() === correctText.toLowerCase();
+                }
+
+                if (isCorrect) {
+                    testResult.correctAnswers++;
+                } else {
+                    testResult.incorrectAnswers++;
+                }
+
+                testResult.questions.push({
+                    questionId: question.id,
+                    questionText: question.questionText,
+                    isCorrect,
+                    userAnswer: userAnswerValue,
+                    correctAnswer: correctAnswerValue,
+                });
+            }
         }
 
         await db.transaction(async (trx) => {
@@ -100,6 +186,10 @@ export default async function sendAttempts(value: FormAnswer, formId: number) {
                 }
             }
         });
+
+        if (isTest && testResult) {
+            return testResult;
+        }
 
         return true;
     } catch (error) {

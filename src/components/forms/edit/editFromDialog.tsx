@@ -27,6 +27,7 @@ export const editFormSchema = z.object({
     title: z.string().min(3),
     description: z.string(),
     isTest: z.boolean(),
+    successMessage: z.string().optional(),
 })
 
 export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
@@ -37,6 +38,7 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
             title: oldForm.title,
             description: oldForm.description,
             isTest: oldForm.isTest,
+            successMessage: oldForm.successMessage || '',
         },
     })
 
@@ -124,6 +126,23 @@ export default function EditFromDialog({oldForm} : {oldForm: fullFormType}) {
                                         </Field>
                                         {/*<Checkbox {...field} />*/}
                                         {/*<Input type='checkbox' placeholder="" {...field} />*/}
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="successMessage"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Сообщение после отправки</FormLabel>
+                                    <FormControl>
+                                        <Textarea 
+                                            placeholder="Спасибо за заполнение формы!" 
+                                            {...field} 
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

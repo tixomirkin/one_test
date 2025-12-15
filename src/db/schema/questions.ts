@@ -13,6 +13,7 @@ export const questionTable = mysqlTable('question', {
     questionType: questionTypeEnum,
     required: boolean('required').default(false).notNull(),
     position: int().default(0).notNull(),
+    correctAnswer: varchar("correct_answer", { length: 255 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

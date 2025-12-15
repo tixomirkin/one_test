@@ -12,6 +12,7 @@ export default async function FormPage({params}: { params: Promise<{ slug: strin
     const {slug} = await params;
 
     const form = await getFullFormBySlug(slug);
+    
     if (!form) {
         notFound();
     }

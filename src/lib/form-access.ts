@@ -18,7 +18,6 @@ export interface FormAccess {
 export async function getUserFormRole(formId: number): Promise<FormAccess> {
     try {
         const user = await getUser();
-        
         // Проверяем, является ли пользователь владельцем
         const form = await db
             .select()
@@ -32,7 +31,6 @@ export async function getUserFormRole(formId: number): Promise<FormAccess> {
         if (form.length > 0) {
             return { role: 'owner', isOwner: true };
         }
-        
         // Проверяем доступ в таблице access
         const access = await db
             .select()
@@ -116,6 +114,7 @@ async function getFormIdBySlug(slug: string): Promise<number | null> {
  * Получить роль пользователя для формы по slug
  */
 export async function getUserFormRoleBySlug(slug: string): Promise<FormAccess> {
+    
     const formId = await getFormIdBySlug(slug);
     if (!formId) {
         return { role: null, isOwner: false };

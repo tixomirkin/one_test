@@ -4,13 +4,14 @@ import { usersTable } from "@/db/schema/users";
 import { eq } from "drizzle-orm";
 
 export async function getUser() {
+    
     const hdrs = await headers();
     const idString = hdrs.get("x-user-id");
     
     if (!idString) {
         throw new Error("User ID not found in headers");
     }
-
+    
     const id = Number.parseInt(idString, 10);
     
     if (isNaN(id)) {
